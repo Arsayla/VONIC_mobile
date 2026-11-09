@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- Primary Palette (from Figma Design System) -->
+    <color name="primary_main">#1988EF</color>
+    <color name="primary_light">#669CF4</color>
+    <color name="primary_surface">#EAF2FF</color>
+    <color name="primary_dark">#0C58DA</color>
+
+    <!-- Secondary Palette -->
+    <color name="secondary_main">#053788</color>
+    <color name="secondary_medium">#2F5085</color>
+    <color name="secondary_dark">#082450</color>
+
+    <!-- Neutral Palette -->
+    <color name="neutral_white">#FFFFFF</color>
+    <color name="neutral_bg">#FAFAFA</color>
+    <color name="neutral_border">#DBDBDB</color>
+    <color name="neutral_text">#191919</color>
+    <color name="neutral_muted">#697791</color>
+
+    <!-- Accent Palette -->
+    <color name="accent_danger">#FE2323</color>
+    <color name="accent_danger_light">#FFC2C2</color>
+    <color name="accent_warning">#FFF70E</color>
+    <color name="accent_success_light">#DAFFD1</color>
+    <color name="accent_success">#188F00</color>
 </resources>

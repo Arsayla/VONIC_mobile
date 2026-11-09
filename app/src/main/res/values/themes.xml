@@ -1,8 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.VONIC" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Brand Colors -->
+        <item name="colorPrimary">@color/primary_main</item>
+        <item name="colorOnPrimary">@color/neutral_white</item>
+        <item name="colorPrimaryContainer">@color/primary_surface</item>
+        <item name="colorOnPrimaryContainer">@color/primary_dark</item>
+
+        <item name="colorSecondary">@color/secondary_main</item>
+        <item name="colorOnSecondary">@color/neutral_white</item>
+
+        <item name="android:colorBackground">@color/neutral_bg</item>
+        <item name="colorSurface">@color/neutral_white</item>
+        <item name="colorOnSurface">@color/neutral_text</item>
+
+        <!-- Status & Navigation Bar -->
+        <item name="android:statusBarColor">@color/neutral_white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/neutral_white</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- Default Button & Card Styles -->
+        <item name="materialButtonStyle">@style/Widget.Vonic.Button.Primary</item>
     </style>
 
     <style name="Theme.VONIC" parent="Base.Theme.VONIC" />

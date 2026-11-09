@@ -1,654 +1,283 @@
-
 package com.example.vonic
 
-import android.widget.ImageView
-import android.widget.FrameLayout
-import android.app.AlertDialog
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
+import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
-import android.widget.*
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.text.HtmlCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import androidx.transition.ChangeBounds
+import androidx.transition.Fade
+import androidx.transition.TransitionManager
+import androidx.transition.TransitionSet
+import com.example.vonic.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private val blue = Color.rgb(18, 99, 244)
-    private val darkBlue = Color.rgb(14, 43, 105)
-    private val paleBlue = Color.rgb(239, 245, 255)
-    private val border = Color.rgb(210, 223, 247)
-    private val ink = Color.rgb(28, 42, 69)
-    private val muted = Color.rgb(105, 119, 145)
-    private val green = Color.rgb(220, 248, 225)
-
+    private lateinit var binding: ActivityMainBinding
     private var hasVoted = false
-    private var tab = "Beranda"
-
-    private lateinit var content: LinearLayout
-    private lateinit var navigation: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        window.statusBarColor = Color.WHITE
-        window.navigationBarColor = Color.WHITE
-        window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
-                    View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(250, 251, 255))
-        }
-
-        val scroll = ScrollView(this)
-
-        content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(14), dp(18), dp(20))
-        }
-
-        scroll.addView(content)
-
-        navigation = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.WHITE)
-            setPadding(dp(4), dp(6), dp(4), dp(6))
-        }
-
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(navigation, LinearLayout.LayoutParams(-1, dp(62)))
-
-        setContentView(root)
-        renderPage()
+        setupWindowInsets()
+        setupHeader()
+        setupActivePoll()
+        setupFaqAccordion()
+        setupHistorySection()
+        setupBottomNavigation()
     }
 
-    private fun renderPage() {
-        content.removeAllViews()
+    /**
+     * Mencegah overlap status bar / camera punch-hole dan gesture navigation bar.
+     * Status bar tinggi diterapkan ke top padding headerBar,
+     * dan navigation bar tinggi diterapkan ke bottom padding bottomNavigation.
+     */
+    private fun setupWindowInsets() {
+        val originalHeaderPaddingTop = binding.headerBar.paddingTop
+        val originalNavPaddingBottom = binding.bottomNavigation.paddingBottom
 
-        when (tab) {
-            "Beranda" -> homePage()
-            "Riwayat" -> historyPage()
-            "Hasil" -> resultPage()
-            "FAQ" -> faqPage()
-            "Akun" -> accountPage()
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.headerBar.updatePadding(
+                top = originalHeaderPaddingTop + systemBars.top
+            )
+            binding.bottomNavigation.updatePadding(
+                bottom = originalNavPaddingBottom + systemBars.bottom
+            )
+            insets
         }
-
-        renderNavigation()
     }
 
+    private fun setupHeader() {
+        // Format nama ringkas: kata pertama + inisial huruf pertama kata terakhir (misal "Melisa D.")
+        binding.tvUserName.text = formatDisplayName("Melisa Danuar, S.Kom")
 
-    private fun header() {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(6), 0, dp(24))
-        }
-
-        // Logo Vonic berbentuk gambar
-        val logo = ImageView(this).apply {
-            setImageResource(R.drawable.logo_vonic)
-            scaleType = ImageView.ScaleType.FIT_START
-            contentDescription = "Logo Vonic"
-        }
-
-        row.addView(
-            logo,
-            LinearLayout.LayoutParams(dp(115), dp(38)).apply {
-                weight = 1f
-            }
-        )
-
-        // Tombol notifikasi di kanan
-        val notification = FrameLayout(this).apply {
-            background = rounded(Color.TRANSPARENT, 12)
-            isClickable = true
-            isFocusable = true
-            contentDescription = "Notifikasi"
-            setOnClickListener {
-                AlertDialog.Builder(this@MainActivity)
-                    .setTitle("Notifikasi")
-                    .setMessage("Belum ada notifikasi baru.")
-                    .setPositiveButton("Tutup", null)
-                    .show()
+        // Kunci lebar dropdown secara dinamis agar 100% sama persis dengan lebar chip nama
+        binding.userProfileChip.post {
+            if (binding.userProfileChip.width > 0) {
+                val params = binding.profileDropdownCard.layoutParams
+                params.width = binding.userProfileChip.width
+                binding.profileDropdownCard.layoutParams = params
             }
         }
 
-        val bell = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_popup_reminder)
-            setColorFilter(darkBlue)
-            contentDescription = "Ikon notifikasi"
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-        }
-
-        notification.addView(
-            bell,
-            FrameLayout.LayoutParams(dp(28), dp(28), Gravity.CENTER)
-        )
-
-        row.addView(
-            notification,
-            LinearLayout.LayoutParams(dp(38), dp(38))
-        )
-
-        content.addView(row)
-    }
-
-
-    // BERANDA
-
-    private fun homePage() {
-        header()
-
-        sectionTitle("Poll Aktif")
-
-        if (hasVoted) {
-            votedCard()
-        } else {
-            activePollCard()
-        }
-
-        space(22)
-
-        sectionTitle("Pertanyaan Umum (FAQ)") {
-            tab = "FAQ"
-            renderPage()
-        }
-
-        faqItem("Mengapa saya harus vote?")
-        faqItem("Bagaimana cara mengubah vote?")
-        faqItem("Kapan hasil voting diumumkan?")
-
-        space(22)
-
-        sectionTitle("Riwayat Voting Saya") {
-            tab = "Riwayat"
-            renderPage()
-        }
-
-        historyItem("Piknik DTEDI Periode 2025", "10 Des 2025")
-        historyItem("Piknik DTEDI Periode 2024", "5 Nov 2024")
-    }
-
-    private fun activePollCard() {
-        val box = card()
-
-        box.addView(text("Piknik DTEDI\nPeriode 2026", 23f, blue, true))
-        spaceIn(box, 8)
-
-        box.addView(
-            text(
-                "Ayo pilih desain kaos dan destinasi wisata favoritmu!",
-                14f,
-                ink
-            )
-        )
-
-        spaceIn(box, 14)
-
-        box.addView(
-            pill(
-                "● Berakhir dalam 23 : 48 : 15",
-                Color.rgb(255, 232, 232),
-                Color.rgb(195, 35, 35)
-            )
-        )
-
-        spaceIn(box, 16)
-
-        box.addView(infoRow())
-
-        spaceIn(box, 14)
-
-        box.addView(primaryButton("Berikan Vote") {
-            showVotingDialog()
-        })
-
-        content.addView(box)
-    }
-
-    private fun votedCard() {
-        val box = card()
-
-        box.addView(text("Piknik DTEDI\nPeriode 2026", 23f, blue, true))
-        spaceIn(box, 12)
-
-        box.addView(
-            message(
-                "✓  Terima kasih!\nVote kamu sudah terekam.",
-                green,
-                Color.rgb(15, 110, 45)
-            )
-        )
-
-        spaceIn(box, 10)
-
-        box.addView(
-            text(
-                "Kamu masih bisa mengubah vote sebelum batas waktu berakhir.",
-                14f,
-                ink
-            )
-        )
-
-        spaceIn(box, 14)
-        box.addView(infoRow())
-        spaceIn(box, 12)
-
-        box.addView(outlineButton("✎  Ubah Vote") {
-            showVotingDialog()
-        })
-
-        content.addView(box)
-    }
-
-    private fun infoRow(): View {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(10), dp(12), dp(10), dp(12))
-            background = rounded(paleBlue, 12)
-        }
-
-        row.addView(
-            text("▦  Periode\n1 Sep – 12 Sep 2026", 12f, darkBlue),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        row.addView(
-            text("♙  Partisipan\n120 orang", 12f, darkBlue),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        return row
-    }
-
-    // RIWAYAT VOTING
-
-    private fun historyPage() {
-        header()
-        sectionTitle("Riwayat Voting Saya")
-
-        historyItem("Piknik DTEDI Periode 2025", "10 Des 2025")
-        historyItem("Piknik DTEDI Periode 2024", "5 Nov 2024")
-        historyItem("Piknik DTEDI Periode 2023", "8 Des 2023")
-    }
-
-    private fun historyItem(name: String, date: String) {
-        val box = card()
-
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val details = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        details.addView(text(name, 14f, darkBlue, true))
-        spaceIn(details, 5)
-        details.addView(text("Hasil diumumkan • $date", 12f, muted))
-
-        row.addView(details, LinearLayout.LayoutParams(0, -2, 1f))
-
-        row.addView(
-            pill("Selesai", green, Color.rgb(15, 110, 45))
-        )
-
-        box.addView(row)
-        content.addView(box)
-        space(8)
-    }
-
-    // HASIL VOTING
-
-    private fun resultPage() {
-        header()
-        sectionTitle("Hasil Voting")
-
-        val box = card()
-
-        box.addView(text("Piknik DTEDI Periode 2026", 21f, darkBlue, true))
-        spaceIn(box, 10)
-
-        box.addView(
-            pill("Hasil Telah Diumumkan", green, Color.rgb(15, 110, 45))
-        )
-
-        spaceIn(box, 18)
-
-        box.addView(text("♧  Desain Kaos Terpilih", 16f, darkBlue, true))
-        spaceIn(box, 8)
-
-        box.addView(
-            message("KAOS A\n\n             VONIC", paleBlue, blue)
-        )
-
-        spaceIn(box, 20)
-
-        box.addView(text("♙  Destinasi Terpilih", 16f, darkBlue, true))
-        spaceIn(box, 8)
-
-        box.addView(text("Pantai Lorem Ipsum   ★ 4,8", 17f, darkBlue, true))
-        spaceIn(box, 10)
-
-        box.addView(
-            message(
-                "🏝\n\nPantai dengan pasir putih dan air laut biru",
-                paleBlue,
-                blue
-            )
-        )
-
-        spaceIn(box, 14)
-        box.addView(text("Lokasi", 12f, muted, true))
-        box.addView(
-            text("Pantai Kartini, Jepara, Jawa Tengah", 14f, ink)
-        )
-
-        spaceIn(box, 12)
-        box.addView(text("Jarak: 120 Km", 14f, ink))
-        box.addView(text("Lama perjalanan: 2 Hari", 14f, ink))
-
-        spaceIn(box, 12)
-        box.addView(text("Benefit", 13f, muted, true))
-        box.addView(text("Bisa • Makan • Minum • Kamar 2 hari", 13f, ink))
-
-        spaceIn(box, 16)
-
-        box.addView(
-            message(
-                "Perkiraan Biaya per Orang\nRp 500.000",
-                paleBlue,
-                blue
-            )
-        )
-
-        content.addView(box)
-    }
-
-    // FAQ
-
-    private fun faqPage() {
-        header()
-        sectionTitle("Pertanyaan Umum (FAQ)")
-
-        faqItem("Mengapa saya harus vote?")
-        faqItem("Bagaimana cara memberikan suara?")
-        faqItem("Apakah pilihan bisa diubah setelah dikirim?")
-        faqItem("Kapan hasil voting diumumkan?")
-        faqItem("Apa yang terjadi jika belum sempat memilih?")
-    }
-
-    private fun faqItem(question: String) {
-        val box = card()
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        row.addView(text("ⓘ", 19f, blue, true))
-
-        row.addView(
-            text(question, 13f, ink),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        row.addView(text("⌄", 18f, darkBlue))
-        box.addView(row)
-
-        box.setOnClickListener {
-            val answer = when {
-                question.contains("mengubah") ||
-                        question.contains("diubah") ->
-                    "Pilihan dapat diubah selama periode voting masih berlangsung."
-
-                question.contains("Kapan") ->
-                    "Hasil voting diumumkan setelah periode voting berakhir."
-
-                question.contains("belum") ->
-                    "Voting akan ditutup otomatis saat tenggat waktu tercapai."
-
-                else ->
-                    "Pilih polling yang aktif, tentukan pilihanmu, lalu kirim vote."
-            }
-
+        binding.btnNotification.setOnClickListener {
+            hideProfileDropdown()
             AlertDialog.Builder(this)
-                .setTitle(question)
-                .setMessage(answer)
-                .setPositiveButton("Mengerti", null)
+                .setTitle("Notifikasi")
+                .setMessage("Belum ada notifikasi baru untuk pemilihan ini.")
+                .setPositiveButton("Tutup", null)
                 .show()
         }
 
-        content.addView(box)
-        space(7)
+        // Klik pada chip nama/identitas untuk membuka/menutup dropdown Profile & Logout
+        binding.userProfileChip.setOnClickListener {
+            toggleProfileDropdown()
+        }
+
+        // Opsi 1: Profile
+        binding.menuProfile.setOnClickListener {
+            hideProfileDropdown()
+            AlertDialog.Builder(this)
+                .setTitle("Profil Pemilih")
+                .setMessage("Nama: Melisa Danuar, S.Kom\nRole: Dosen / Tendik DTEDI UGM\nStatus: Terverifikasi Aktif")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+
+        // Opsi 2: Log Out
+        binding.menuLogout.setOnClickListener {
+            hideProfileDropdown()
+            AlertDialog.Builder(this)
+                .setTitle("Konfirmasi Keluar")
+                .setMessage("Apakah Anda yakin ingin keluar dari akun Vonic?")
+                .setPositiveButton("Log Out") { _, _ ->
+                    Toast.makeText(this, "Berhasil keluar dari akun Vonic.", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Batal", null)
+                .show()
+        }
+
+        // Menutup dropdown otomatis jika pengguna scroll / klik area konten
+        binding.scrollView.setOnTouchListener { _, _ ->
+            if (binding.profileDropdownCard.visibility == View.VISIBLE) {
+                hideProfileDropdown()
+            }
+            false
+        }
     }
 
-    // AKUN
-
-    private fun accountPage() {
-        header()
-        sectionTitle("Akun Saya")
-
-        val box = card()
-
-        box.addView(text("Melisa Danar, S.Kom", 20f, darkBlue, true))
-        spaceIn(box, 8)
-        box.addView(text("Pengguna Vonic", 14f, muted))
-
-        content.addView(box)
+    /**
+     * Helper untuk memformat nama tampilan:
+     * Menghilangkan gelar (setelah koma), mengambil kata pertama, dan inisial kata terakhir.
+     * Contoh: "Melisa Danuar, S.Kom" -> "Melisa D."
+     */
+    private fun formatDisplayName(fullName: String): String {
+        val nameWithoutDegree = fullName.split(",")[0].trim()
+        val words = nameWithoutDegree.split("\\s+".toRegex()).filter { it.isNotEmpty() }
+        return when {
+            words.size >= 2 -> "${words.first()} ${words.last().first().uppercaseChar()}."
+            words.size == 1 -> words[0]
+            else -> fullName
+        }
     }
 
-    // DIALOG VOTING
+    private fun toggleProfileDropdown() {
+        if (binding.profileDropdownCard.visibility == View.VISIBLE) {
+            hideProfileDropdown()
+        } else {
+            showProfileDropdown()
+        }
+    }
+
+    private fun showProfileDropdown() {
+        // Kunci lebar dropdown secara dinamis agar 100% sama persis dengan lebar chip nama
+        if (binding.userProfileChip.width > 0) {
+            val params = binding.profileDropdownCard.layoutParams
+            params.width = binding.userProfileChip.width
+            binding.profileDropdownCard.layoutParams = params
+        }
+
+        binding.profileDropdownCard.visibility = View.VISIBLE
+        binding.profileDropdownCard.alpha = 0f
+        binding.profileDropdownCard.animate().alpha(1f).setDuration(150).start()
+        binding.ivUserChevron.animate().rotation(180f).setDuration(150).start()
+    }
+
+    private fun hideProfileDropdown() {
+        binding.profileDropdownCard.animate()
+            .alpha(0f)
+            .setDuration(150)
+            .withEndAction {
+                binding.profileDropdownCard.visibility = View.GONE
+            }
+            .start()
+        binding.ivUserChevron.animate().rotation(0f).setDuration(150).start()
+    }
+
+    private fun setupActivePoll() {
+        // Teks subtitle dengan format tebal pada "Piknik DTEDI Periode 2026"
+        binding.tvPollSubtitle.text = HtmlCompat.fromHtml(
+            "Terima kasih telah berpartisipasi dalam <b>Piknik DTEDI Periode 2026</b>",
+            HtmlCompat.FROM_HTML_MODE_LEGACY
+        )
+
+        binding.btnVoteNow.setOnClickListener {
+            showVotingDialog()
+        }
+    }
 
     private fun showVotingDialog() {
-        val choices = arrayOf(
-            "Kaos A — Pantai Lorem Ipsum",
-            "Kaos B — Pegunungan"
+        val options = arrayOf(
+            "Pilihan 1: Kaos A — Pantai Kartini, Jepara",
+            "Pilihan 2: Kaos B — Pegunungan Bromo"
         )
 
         AlertDialog.Builder(this)
-            .setTitle("Pilih favoritmu")
-            .setSingleChoiceItems(choices, 0, null)
-            .setPositiveButton(
-                if (hasVoted) "Simpan Perubahan" else "Kirim Vote"
-            ) { _, _ ->
+            .setTitle(if (hasVoted) "Ubah Pilihan Voting" else "Berikan Suara Anda")
+            .setSingleChoiceItems(options, 0, null)
+            .setPositiveButton(if (hasVoted) "Simpan Perubahan" else "Kirim Suara") { dialog, _ ->
                 hasVoted = true
-                renderPage()
-
-                AlertDialog.Builder(this)
-                    .setMessage("Vote kamu berhasil disimpan!")
-                    .setPositiveButton("OK", null)
-                    .show()
+                binding.tvVoteButtonText.text = "Ubah Pilihan Voting"
+                binding.tvParticipants.text = "121"
+                binding.tvParticipationStatus.text = "Selesai"
+                binding.ivParticipationCheck.visibility = View.VISIBLE
+                Toast.makeText(this, "Suara kamu berhasil dicatat di Vonic!", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
             }
             .setNegativeButton("Batal", null)
             .show()
     }
 
-    // BOTTOM NAVIGATION
+    /**
+     * FAQ Dropdown Accordion:
+     * Menampilkan dan menyembunyikan box jawaban putih dengan animasi slide/fade halus (AutoTransition 250ms),
+     * serta menganimasikan perputaran chevron panah:
+     * - Keadaan tertutup: panah menghadap bawah (0 derajat)
+     * - Keadaan terbuka: panah menghadap atas (180 derajat)
+     */
+    private fun setupFaqAccordion() {
+        setupAccordionItem(binding.faqHeader1, binding.faqAnswer1, binding.ivFaqChevron1)
+        setupAccordionItem(binding.faqHeader2, binding.faqAnswer2, binding.ivFaqChevron2)
+        setupAccordionItem(binding.faqHeader3, binding.faqAnswer3, binding.ivFaqChevron3)
+        setupAccordionItem(binding.faqHeader4, binding.faqAnswer4, binding.ivFaqChevron4)
+    }
 
+    private fun setupAccordionItem(header: View, answerBox: LinearLayout, chevron: ImageView) {
+        // Klik pada header pertanyaan untuk membuka/menutup dropdown
+        header.setOnClickListener {
+            toggleFaqItem(answerBox, chevron)
+        }
 
-    private fun renderNavigation() {
-        navigation.removeAllViews()
-
-        navigation.gravity = Gravity.CENTER
-        navigation.orientation = LinearLayout.HORIZONTAL
-        navigation.setPadding(dp(4), dp(5), dp(4), dp(5))
-        navigation.setBackgroundColor(Color.WHITE)
-
-        val tabs = listOf("Beranda", "Riwayat", "Hasil", "FAQ", "Akun")
-        val icons = listOf("⌂", "▣", "▥", "?", "♙")
-
-        tabs.forEachIndexed { index, name ->
-            val selected = tab == name
-
-            val item = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                setPadding(dp(2), dp(3), dp(2), dp(3))
-                isClickable = true
-                isFocusable = true
-
-                setOnClickListener {
-                    tab = name
-                    renderPage()
-                }
-            }
-
-            val icon = TextView(this).apply {
-                text = icons[index]
-                textSize = 21f
-                gravity = Gravity.CENTER
-                setTextColor(if (selected) blue else muted)
-                setTypeface(
-                    Typeface.DEFAULT,
-                    if (selected) Typeface.BOLD else Typeface.NORMAL
-                )
-            }
-
-            val label = TextView(this).apply {
-                text = name
-                textSize = 10f
-                gravity = Gravity.CENTER
-                setTextColor(if (selected) blue else muted)
-                setPadding(0, dp(2), 0, 0)
-            }
-
-            item.addView(
-                icon,
-                LinearLayout.LayoutParams(-1, dp(25))
-            )
-
-            item.addView(
-                label,
-                LinearLayout.LayoutParams(-1, dp(17))
-            )
-
-            navigation.addView(
-                item,
-                LinearLayout.LayoutParams(0, -1, 1f)
-            )
+        // Klik pada box jawaban juga dapat menutup dropdown jika diinginkan
+        answerBox.setOnClickListener {
+            toggleFaqItem(answerBox, chevron)
         }
     }
 
-    // KOMPONEN UI
+    private fun toggleFaqItem(answerBox: LinearLayout, chevron: ImageView) {
+        val isCurrentlyExpanded = answerBox.visibility == View.VISIBLE
 
-    private fun sectionTitle(
-        title: String,
-        action: (() -> Unit)? = null
-    ) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(4), 0, dp(10))
+        // Animasi transisi layout yang sinkron dan super mulus pada contentLayout (mencegah teks Riwayat menimpa)
+        val transition = TransitionSet().apply {
+            ordering = TransitionSet.ORDERING_TOGETHER
+            addTransition(ChangeBounds())
+            addTransition(Fade())
+            duration = 220
+            interpolator = FastOutSlowInInterpolator()
         }
+        TransitionManager.beginDelayedTransition(binding.contentLayout, transition)
 
-        row.addView(
-            text(title, 16f, darkBlue, true),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        if (action != null) {
-            val more = text("Lihat semua", 11f, blue)
-            more.setOnClickListener { action() }
-            row.addView(more)
-        }
-
-        content.addView(row)
-    }
-
-    private fun card(): LinearLayout =
-        LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(15), dp(14), dp(15))
-            background = rounded(Color.WHITE, 16, border)
-            elevation = dp(2).toFloat()
-
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
-                bottomMargin = dp(8)
-            }
-        }
-
-    private fun primaryButton(
-        title: String,
-        action: () -> Unit
-    ) = Button(this).apply {
-        text = title
-        isAllCaps = false
-        textSize = 14f
-        setTextColor(Color.WHITE)
-        background = rounded(blue, 10)
-        setOnClickListener { action() }
-    }
-
-    private fun outlineButton(
-        title: String,
-        action: () -> Unit
-    ) = Button(this).apply {
-        text = title
-        isAllCaps = false
-        textSize = 14f
-        setTextColor(blue)
-        background = rounded(Color.WHITE, 10, border)
-        setOnClickListener { action() }
-    }
-
-    private fun pill(
-        title: String,
-        bg: Int,
-        fg: Int
-    ) = text(title, 11f, fg, true).apply {
-        background = rounded(bg, 24)
-        setPadding(dp(10), dp(7), dp(10), dp(7))
-    }
-
-    private fun message(
-        title: String,
-        bg: Int,
-        fg: Int
-    ) = text(title, 14f, fg).apply {
-        background = rounded(bg, 12)
-        setPadding(dp(12), dp(14), dp(12), dp(14))
-    }
-
-    private fun text(
-        value: String,
-        size: Float,
-        color: Int,
-        bold: Boolean = false
-    ) = TextView(this).apply {
-        text = value
-        textSize = size
-        setTextColor(color)
-        if (bold) setTypeface(typeface, Typeface.BOLD)
-        setLineSpacing(dp(2).toFloat(), 1f)
-    }
-
-    private fun rounded(
-        color: Int,
-        radius: Int,
-        stroke: Int = Color.TRANSPARENT
-    ) = GradientDrawable().apply {
-        setColor(color)
-        cornerRadius = dp(radius).toFloat()
-
-        if (stroke != Color.TRANSPARENT) {
-            setStroke(dp(1), stroke)
+        if (isCurrentlyExpanded) {
+            // Tutup dropdown (naik)
+            answerBox.visibility = View.GONE
+            chevron.animate().rotation(0f).setDuration(220).start()
+        } else {
+            // Buka dropdown (turun)
+            answerBox.visibility = View.VISIBLE
+            chevron.animate().rotation(180f).setDuration(220).start()
         }
     }
 
-    private fun space(height: Int) {
-        content.addView(View(this), LinearLayout.LayoutParams(1, dp(height)))
+    private fun setupHistorySection() {
+        binding.btnSeeAllHistory.setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
+        }
+
+        binding.btnViewHistoryResult1.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Hasil Piknik DTEDI 2025")
+                .setMessage("Destinasi Terpilih: Pantai Indrayanti, Yogyakarta\nTotal Partisipan: 200 orang")
+                .setPositiveButton("Tutup", null)
+                .show()
+        }
+
+        binding.btnViewHistoryResult2.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Hasil Piknik DTEDI 2024")
+                .setMessage("Destinasi Terpilih: Kaliurang Park, Sleman\nTotal Partisipan: 185 orang")
+                .setPositiveButton("Tutup", null)
+                .show()
+        }
     }
 
-    private fun spaceIn(parent: LinearLayout, height: Int) {
-        parent.addView(View(this), LinearLayout.LayoutParams(1, dp(height)))
-    }
+    private fun setupBottomNavigation() {
+        binding.navBeranda.setOnClickListener {
+            binding.scrollView.smoothScrollTo(0, 0)
+        }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
+        binding.navRiwayat.setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
+        }
+    }
 }
-

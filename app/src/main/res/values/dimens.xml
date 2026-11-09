@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing & Padding Tokens -->
+    <dimen name="spacing_2xs">2dp</dimen>
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">12dp</dimen>
+    <dimen name="spacing_lg">16dp</dimen>
+    <dimen name="spacing_xl">20dp</dimen>
+    <dimen name="spacing_2xl">24dp</dimen>
+    <dimen name="spacing_3xl">32dp</dimen>
+    <dimen name="spacing_4xl">40dp</dimen>
+
+    <!-- Corner Radius Tokens (from Figma Appearance Panel: Corner radius 12) -->
+    <dimen name="radius_xs">4dp</dimen>
+    <dimen name="radius_sm">8dp</dimen>
+    <dimen name="radius_md">12dp</dimen>
+    <dimen name="radius_lg">16dp</dimen>
+    <dimen name="radius_full">999dp</dimen>
+
+    <!-- Typography Font Sizes (from Figma Typography System) -->
+    <dimen name="font_head_1">40sp</dimen>
+    <dimen name="font_head_2">32sp</dimen>
+    <dimen name="font_head_3">24sp</dimen>
+    <dimen name="font_head_4">20sp</dimen>
+    <dimen name="font_body_1">16sp</dimen>
+    <dimen name="font_body_2">14sp</dimen>
+    <dimen name="font_body_3">12sp</dimen>
+    <dimen name="font_body_4">10sp</dimen>
+    <dimen name="font_body_5">8sp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="card_elevation">2dp</dimen>
+    <dimen name="bottom_nav_height">64dp</dimen>
+</resources>
